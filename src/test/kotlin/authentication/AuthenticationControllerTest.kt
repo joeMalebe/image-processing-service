@@ -50,4 +50,18 @@ class AuthenticationControllerTest {
         assertFalse { result }
     }
 
+    @Test
+    fun `when username is blank then login fails`() {
+        val result = controller.signUp(username = "", password ="user")
+
+        assertFalse { result }
+    }
+
+    @Test
+    fun `when password is blank then login fails`() {
+        val result = controller.signUp(username = "jack", password ="")
+
+        assertFalse { result }
+    }
+
 }

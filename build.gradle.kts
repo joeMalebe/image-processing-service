@@ -8,7 +8,7 @@ group = "com.example"
 version = "0.0.1"
 
 application {
-    mainClass = "io.ktor.server.cio.EngineMain"
+    mainClass = "com.example.ApplicationKt"
 }
 
 kotlin {
