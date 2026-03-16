@@ -10,6 +10,7 @@ fun main(args: Array<String>) {
         CIO,
         port = 8080,
         host = "0.0.0.0",
+
         module = {
             module(controller = AppController())
         }
