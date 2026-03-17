@@ -2,14 +2,21 @@ package com.example
 
 import com.example.authentication.AppController
 import com.example.authentication.UNAUTHORISED
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentDisposition.Companion.File
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.http.headersOf
 import io.ktor.server.testing.testApplication
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -98,7 +105,7 @@ class ApplicationTest {
     }
 
     @Test
-    fun `when images with valid token then return 200`() = testApplication {
+    fun `when images with valid token and no image then return 415`() = testApplication {
         application {
             module(AppController())
         }
@@ -106,6 +113,35 @@ class ApplicationTest {
             val validToken =
                 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vMC4wLjAuMDo4MDgwLyIsImF1ZCI6Imh0dHA6Ly8wLjAuMC4wOjgwODAvaGVsbG8iLCJ1c2VybmFtZSI6IkpvZSJ9.B10QPcDR2EYvl5seWuKe9hmvuu-a1A2cEUBZutae2zc"
             headers.append("Authorization", "Bearer $validToken")
+        }
+
+        assertEquals(HttpStatusCode.UnsupportedMediaType, response.status)
+    }
+
+    @Test
+    fun `when images has image in body then return ok`() = testApplication {
+        application {
+            module(AppController())
+        }
+        val response = client.post("/images") {
+            val validToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vMC4wLjAuMDo4MDgwLyIsImF1ZCI6Imh0dHA6Ly8wLjAuMC4wOjgwODAvaGVsbG8iLCJ1c2VybmFtZSI6IkpvZSJ9.B10QPcDR2EYvl5seWuKe9hmvuu-a1A2cEUBZutae2zc"
+            headers.append("Authorization", "Bearer $validToken")
+            val boundary ="WebAppBoundary"
+
+            setBody(
+            MultiPartFormDataContent(
+                formData {
+                    append("description", "image")
+                    append("image" , File("src/test/resources/test.jpeg").readBytes(), Headers.build {
+                        append(HttpHeaders.ContentType, ContentType.Image.JPEG.toString())
+                        append(HttpHeaders.ContentDisposition, "filename=\"test.jpg\"")
+                    })
+                },
+                boundary = boundary,
+                contentType = ContentType.MultiPart.FormData.withParameter("boundary", boundary)
+            )
+            )
         }
 
         assertEquals(HttpStatusCode.OK, response.status)
