@@ -1,12 +1,15 @@
 package com.example
 
 import com.example.authentication.AppController
-import com.example.authentication.LoginRequest
 import com.example.authentication.UNAUTHORISED
-import io.ktor.client.request.*
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.*
-import io.ktor.server.testing.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -92,6 +95,33 @@ class ApplicationTest {
         }
 
         assertEquals("valid", response.bodyAsText())
+    }
+
+    @Test
+    fun `when images with valid token then return 200`() = testApplication {
+        application {
+            module(AppController())
+        }
+        val response = client.post("/images") {
+            val validToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vMC4wLjAuMDo4MDgwLyIsImF1ZCI6Imh0dHA6Ly8wLjAuMC4wOjgwODAvaGVsbG8iLCJ1c2VybmFtZSI6IkpvZSJ9.B10QPcDR2EYvl5seWuKe9hmvuu-a1A2cEUBZutae2zc"
+            headers.append("Authorization", "Bearer $validToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
+
+    @Test
+    fun `when images with invalid token then return 401`() = testApplication {
+        application {
+            module(AppController())
+        }
+
+        val response = client.post("/images") {
+            headers.append("Authorisation", "Bearer invalid")
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
 }

@@ -20,5 +20,6 @@ fun main(args: Array<String>) {
 fun Application.module(controller: AppController) {
     configureSerialization()
     configureHTTP()
+    configureJwt()
     configureRouting(controller = controller)
 }
