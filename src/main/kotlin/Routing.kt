@@ -5,7 +5,10 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.example.authentication.AppController
 import com.example.authentication.LoginRequest
 import com.example.authentication.UNAUTHORISED
+import io.ktor.client.utils.EmptyContent.contentType
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
@@ -70,8 +73,10 @@ fun Application.configureRouting(controller: AppController) {
                 param.forEachPart { part ->
                     when(part) {
                         is PartData.FileItem -> {
-                            //todo remove this when uploading to backend
-                            call.respondFile (File("tes.jpg").apply { writeBytes(part.provider().toByteArray())})
+                           val result = controller.uploadImage(part.provider().toByteArray(),part.originalFileName ?: "$username-file")
+                            //todo remove the returning of the image when uploading to backend
+                            call.response.headers.append( HttpHeaders.ContentType,ContentType.Application.Json.contentType)
+                            call.respond (HttpStatusCode.OK, result.getOrThrow())
                         }
                         is PartData.FormItem -> {
                             //todo handle case
