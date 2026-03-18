@@ -7,6 +7,7 @@ var imageId = 0
 interface IImageController {
     fun uploadImage(file: ByteArray, originalFileName: String = ""): Result<ImageMetaData>
     fun retrieveImage(username: String, id: Int): Result<Pair<ImageMetaData, ByteArray>>
+    fun retrieveAll(username: String): Result<List<ImageMetaData>>
 }
 
 class ImageController(val database: ImageDataBase = ImageDatabaseImpl()) : IImageController {
@@ -17,6 +18,10 @@ class ImageController(val database: ImageDataBase = ImageDatabaseImpl()) : IImag
     override fun retrieveImage(username: String, id: Int): Result<Pair<ImageMetaData, ByteArray>> {
         return database.download(id = id, username = username)
     }
+
+    override fun retrieveAll(username: String): Result<List<ImageMetaData>> {
+        return database.retrieveAll(username)
+    }
 }
 
 class ImageDatabaseImpl : ImageDataBase {
@@ -26,14 +31,15 @@ class ImageDatabaseImpl : ImageDataBase {
         username: String,
         originalFileName: String
     ): Result<ImageMetaData> {
+        val metaData = ImageMetaData(imageId.toString(), username, originalFileName)
         if (database.containsKey(username)) {
-            database[username]?.add(UserImage(image = file, username = username, id = imageId))
+            database[username]?.add(UserImage(image = file, metaData))
         } else {
             database[username] =
-                mutableListOf(UserImage(image = file, username = username, id = imageId))
+                mutableListOf(UserImage(image = file, metaData))
 
         }
-        return Result.success(ImageMetaData(imageId.toString(), username, originalFileName)).also {
+        return Result.success(metaData).also {
             imageId++
         }
     }
@@ -41,17 +47,25 @@ class ImageDatabaseImpl : ImageDataBase {
     override fun download(id: Int, username: String): Result<Pair<ImageMetaData, ByteArray>> {
         return database[username]?.firstOrNull { it.id == id }?.let {
             Result.success(
-                ImageMetaData(
-                    it.id.toString(),
-                    it.username,
-                    it.image.toString()
-                ) to it.image
+                it.imageMetaData to it.image
             )
         } ?: Result.failure(NoSuchElementException())
     }
+
+    override fun retrieveAll(username: String): Result<List<ImageMetaData>> {
+        return Result.success(database[username]?.map {
+            it.imageMetaData
+        } ?: listOf())
+    }
 }
 
-data class UserImage(val image: ByteArray, val username: String, val id: Int) {
+data class UserImage(val image: ByteArray, val username: String, val id: Int, val imageMetaData: ImageMetaData) {
+    constructor(image: ByteArray, imageMetaData: ImageMetaData) : this(
+        image,
+        imageMetaData.name,
+        imageMetaData.id.toInt(),
+        imageMetaData
+    )
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -82,6 +96,8 @@ interface ImageDataBase {
     ): Result<ImageMetaData>
 
     fun download(id: Int, username: String): Result<Pair<ImageMetaData, ByteArray>>
+
+    fun retrieveAll(username: String): Result<List<ImageMetaData>>
 }
 
 @Serializable

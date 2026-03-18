@@ -29,6 +29,7 @@ import io.ktor.utils.io.toByteArray
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.time.Instant
+import kotlin.collections.listOf
 
 const val secret = "secret"
 const val issuer = "http://0.0.0.0:8080/"
@@ -115,6 +116,26 @@ fun Application.configureRouting(controller: AppController) {
                             }
                         } ?: call.respond(HttpStatusCode.BadRequest, "invalid id: $it")
                     } ?: call.respond(HttpStatusCode.Unauthorized)
+                } catch (ex: NumberFormatException) {
+                    call.respond(HttpStatusCode.BadRequest, ex.message ?: "Check the request")
+                }
+            }
+            get("/images") {
+                val principal = call.principal<JWTPrincipal>()
+                val username = principal?.payload?.getClaim("username")?.asString()
+
+                try {
+                    //todo add pagination and limit logic
+                    val page = call.request.queryParameters["page"]?.toInt() ?: 1
+                    val limit = call.request.queryParameters["limit"]?.toInt() ?: 5
+
+                    val result = controller.retrieveAll(username ?: "")
+                    call.response.headers.append(
+                        HttpHeaders.ContentType,
+                        ContentType.Application.Json.toString()
+                    )
+
+                    call.respond(HttpStatusCode.OK, result.getOrThrow())
                 } catch (ex: NumberFormatException) {
                     call.respond(HttpStatusCode.BadRequest, ex.message ?: "Check the request")
                 }

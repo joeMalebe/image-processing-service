@@ -15,6 +15,10 @@ kotlin {
     jvmToolchain(21)
 }
 
+ktor {
+    development = true
+}
+
 dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.core)
