@@ -6,28 +6,49 @@ var imageId = 0
 
 interface IImageController {
     fun uploadImage(file: ByteArray, originalFileName: String = ""): Result<ImageMetaData>
+    fun retrieveImage(username: String, id: Int): Result<Pair<ImageMetaData, ByteArray>>
 }
 
 class ImageController(val database: ImageDataBase = ImageDatabaseImpl()) : IImageController {
     override fun uploadImage(file: ByteArray, originalFileName: String): Result<ImageMetaData> {
-      return database.upload(file, originalFileName = originalFileName)
+        return database.upload(file, originalFileName = originalFileName)
+    }
+
+    override fun retrieveImage(username: String, id: Int): Result<Pair<ImageMetaData, ByteArray>> {
+        return database.download(id = id, username = username)
     }
 }
 
 class ImageDatabaseImpl : ImageDataBase {
-    val database = mutableMapOf<String,  MutableList<UserImage>>()
-    override fun upload(file: ByteArray, username: String, originalFileName: String): Result<ImageMetaData> {
-        if(database.containsKey(username)) {
+    val database = mutableMapOf<String, MutableList<UserImage>>()
+    override fun upload(
+        file: ByteArray,
+        username: String,
+        originalFileName: String
+    ): Result<ImageMetaData> {
+        if (database.containsKey(username)) {
             database[username]?.add(UserImage(image = file, username = username, id = imageId))
         } else {
-            database[username] = mutableListOf(UserImage(image = file, username = username, id = imageId))
+            database[username] =
+                mutableListOf(UserImage(image = file, username = username, id = imageId))
 
         }
-        return Result.success(ImageMetaData(imageId.toString(),username,originalFileName)).also {
+        return Result.success(ImageMetaData(imageId.toString(), username, originalFileName)).also {
             imageId++
         }
     }
 
+    override fun download(id: Int, username: String): Result<Pair<ImageMetaData, ByteArray>> {
+        return database[username]?.firstOrNull { it.id == id }?.let {
+            Result.success(
+                ImageMetaData(
+                    it.id.toString(),
+                    it.username,
+                    it.image.toString()
+                ) to it.image
+            )
+        } ?: Result.failure(NoSuchElementException())
+    }
 }
 
 data class UserImage(val image: ByteArray, val username: String, val id: Int) {
@@ -54,7 +75,13 @@ data class UserImage(val image: ByteArray, val username: String, val id: Int) {
 
 
 interface ImageDataBase {
-    fun upload(file: ByteArray, username: String = "Joe", originalFileName: String):Result<ImageMetaData>
+    fun upload(
+        file: ByteArray,
+        username: String = "Joe",
+        originalFileName: String
+    ): Result<ImageMetaData>
+
+    fun download(id: Int, username: String): Result<Pair<ImageMetaData, ByteArray>>
 }
 
 @Serializable

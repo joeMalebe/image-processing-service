@@ -30,9 +30,9 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.time.Instant
 
-    const val secret ="secret"
-    const val issuer ="http://0.0.0.0:8080/"
-    const val audience ="http://0.0.0.0:8080/hello"
+const val secret = "secret"
+const val issuer = "http://0.0.0.0:8080/"
+const val audience = "http://0.0.0.0:8080/hello"
 fun Application.configureRouting(controller: AppController) {
 
     routing {
@@ -41,9 +41,9 @@ fun Application.configureRouting(controller: AppController) {
         }
         post("/login") {
             val request = call.receive<LoginRequest>()
-            val response = controller.login(request.username,request.password)
+            val response = controller.login(request.username, request.password)
             if (response) {
-               val token = generateToken(request.username)
+                val token = generateToken(request.username)
 
                 call.response.headers.append("jwt-token", token)
                 call.respond("valid")
@@ -71,20 +71,52 @@ fun Application.configureRouting(controller: AppController) {
                 val param = call.receiveMultipart()
 
                 param.forEachPart { part ->
-                    when(part) {
+                    when (part) {
                         is PartData.FileItem -> {
-                           val result = controller.uploadImage(part.provider().toByteArray(),part.originalFileName ?: "$username-file")
+                            val result = controller.uploadImage(
+                                part.provider().toByteArray(),
+                                part.originalFileName ?: "$username-file"
+                            )
                             //todo remove the returning of the image when uploading to backend
-                            call.response.headers.append( HttpHeaders.ContentType,ContentType.Application.Json.contentType)
-                            call.respond (HttpStatusCode.OK, result.getOrThrow())
+                            call.response.headers.append(
+                                HttpHeaders.ContentType,
+                                ContentType.Application.Json.toString()
+                            )
+                            call.respond(HttpStatusCode.OK, result.getOrThrow())
                         }
+
                         is PartData.FormItem -> {
                             //todo handle case
                         }
+
                         else -> {
                             //todo handle case
                         }
                     }
+                }
+            }
+            get("/images/{id}") {
+                val principal = call.principal<JWTPrincipal>()
+                val username = principal?.payload?.getClaim("username")?.asString()
+                val id = call.request.pathVariables["id"]
+
+                try {
+                    username?.let {
+                        id?.let {
+                            val result = controller.retrieveImage(username, id.toInt())
+                            result.onSuccess { image ->
+                                call.response.headers.append(
+                                    HttpHeaders.ContentType,
+                                    ContentType.Image.JPEG.toString()
+                                )
+                                call.respondFile(File(image.first.name).apply { writeBytes(image.second) })
+                            }.onFailure {
+                                call.respond(HttpStatusCode.NotFound)
+                            }
+                        } ?: call.respond(HttpStatusCode.BadRequest, "invalid id: $it")
+                    } ?: call.respond(HttpStatusCode.Unauthorized)
+                } catch (ex: NumberFormatException) {
+                    call.respond(HttpStatusCode.BadRequest, ex.message ?: "Check the request")
                 }
             }
         }

@@ -47,4 +47,24 @@ class ImageControllerTest {
             assertEquals("Hello there",it.message)
         }
     }
+
+    @Test
+    fun `when retrieve image is successful then return image`() {
+        whenever { imageDB.download(any(), any()) }.thenReturn(Result.success(ImageMetaData(id = "1", name = "test", url = "test") to "sdfs".toByteArray()))
+
+        val result = controller.retrieveImage(username = "Joe", id = 1)
+
+        assertEquals("sdfs",result.getOrThrow().second.decodeToString())
+    }
+
+    @Test
+    fun `when retrieve image is unsuccessful then return failed result`() {
+        whenever { imageDB.download(any(), any()) }.thenReturn(Result.failure(RuntimeException("Hello there")))
+
+        val result = controller.retrieveImage(username = "Joe", id = 1)
+
+        result.onFailure {
+            assertEquals("Hello there",it.message)
+        }
+    }
 }
