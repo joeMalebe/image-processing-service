@@ -5,31 +5,22 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.example.authentication.AppController
 import com.example.authentication.LoginRequest
 import com.example.authentication.UNAUTHORISED
-import io.ktor.client.utils.EmptyContent.contentType
 import io.ktor.http.ContentType
-import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
-import io.ktor.http.content.streamProvider
-import io.ktor.http.headers
-import io.ktor.http.headersOf
 import io.ktor.server.application.*
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
-import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.cio.writeChannel
 import io.ktor.utils.io.toByteArray
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.time.Instant
-import kotlin.collections.listOf
 
 const val secret = "secret"
 const val issuer = "http://0.0.0.0:8080/"
@@ -51,7 +42,7 @@ fun Application.configureRouting(controller: AppController) {
 
 
             } else {
-                call.respondText(UNAUTHORISED)
+                call.respond(HttpStatusCode.Unauthorized, UNAUTHORISED)
             }
         }
         post("/sign-up") {
@@ -76,7 +67,8 @@ fun Application.configureRouting(controller: AppController) {
                         is PartData.FileItem -> {
                             val result = controller.uploadImage(
                                 part.provider().toByteArray(),
-                                part.originalFileName ?: "$username-file"
+                                 username,
+                                part.originalFileName ?: "$username-file",
                             )
                             //todo remove the returning of the image when uploading to backend
                             call.response.headers.append(

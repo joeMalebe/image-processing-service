@@ -21,5 +21,6 @@ fun Application.module(controller: AppController) {
     configureSerialization()
     configureHTTP()
     configureJwt()
+    configureMysqlDb()
     configureRouting(controller = controller)
 }

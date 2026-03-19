@@ -1,18 +1,29 @@
 package com.example.image
 
+import com.example.database.ImageTable
+import com.example.database.UserTable
 import kotlinx.serialization.Serializable
+import org.jetbrains.exposed.v1.core.StdOutSqlLogger
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.statements.api.ExposedBlob
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 var imageId = 0
 
 interface IImageController {
-    fun uploadImage(file: ByteArray, originalFileName: String = ""): Result<ImageMetaData>
+    fun uploadImage(file: ByteArray,username: String, originalFileName: String = ""): Result<ImageMetaData>
     fun retrieveImage(username: String, id: Int): Result<Pair<ImageMetaData, ByteArray>>
     fun retrieveAll(username: String): Result<List<ImageMetaData>>
 }
 
 class ImageController(val database: ImageDataBase = ImageDatabaseImpl()) : IImageController {
-    override fun uploadImage(file: ByteArray, originalFileName: String): Result<ImageMetaData> {
-        return database.upload(file, originalFileName = originalFileName)
+    override fun uploadImage(file: ByteArray, username: String, originalFileName: String): Result<ImageMetaData> {
+        return database.upload(file, originalFileName = originalFileName, username = username)
     }
 
     override fun retrieveImage(username: String, id: Int): Result<Pair<ImageMetaData, ByteArray>> {
@@ -24,6 +35,51 @@ class ImageController(val database: ImageDataBase = ImageDatabaseImpl()) : IImag
     }
 }
 
+fun insertImage(userImage: UserImage): Result<Int> = transaction {
+    addLogger(StdOutSqlLogger)
+    SchemaUtils.create(ImageTable)
+
+    val id = UserTable.select(UserTable.id).where { UserTable.name eq userImage.username }
+        .singleOrNull()
+    return@transaction id?.let {
+        Result.success(ImageTable.insert {
+            it[name] = userImage.imageMetaData.name
+            it[url] = userImage.imageMetaData.url
+            it[userId] = id[UserTable.id]
+            it[imageBytes] = ExposedBlob(userImage.image)
+        }[ImageTable.id])
+    } ?: Result.failure(NoSuchElementException("User ${userImage.username} not found"))
+}
+
+fun getAllImagesMetaData(username: String): Result<List<ImageMetaData>> = transaction {
+     addLogger(StdOutSqlLogger)
+     val id =
+         UserTable.select(UserTable.id).where { UserTable.name eq username }.singleOrNull()
+             ?.get(UserTable.id)
+    return@transaction id?.let {
+         Result.success( ImageTable.selectAll().where { ImageTable.userId eq id }.map {
+             ImageMetaData(
+                 it[ImageTable.id].toString(),
+                 it[ImageTable.name],
+                 it[ImageTable.url]
+             )
+         })
+     } ?: Result.failure(NoSuchElementException("User $username not found "))
+ }
+
+fun getImage(imageId: Int, username: String): Result<Pair<ImageMetaData, ByteArray>> = transaction {
+    addLogger(StdOutSqlLogger)
+    val userId = UserTable.select(UserTable.id).where { UserTable.name eq username }.singleOrNull()
+        ?.get(UserTable.id)
+    return@transaction userId?.let {
+
+        ImageTable.selectAll().where((ImageTable.userId eq userId) and (ImageTable.id eq imageId)).singleOrNull()?.let {
+
+            Result.success( ImageMetaData(it[ImageTable.id].toString(), it[ImageTable.name], it[ImageTable.url]) to it[ImageTable.imageBytes].bytes)
+        } ?: Result.failure(NoSuchElementException("No image found (id: $imageId) for user: $username"))
+    } ?: Result.failure(NoSuchElementException("user: $username not found"))
+}
+
 class ImageDatabaseImpl : ImageDataBase {
     val database = mutableMapOf<String, MutableList<UserImage>>()
     override fun upload(
@@ -32,30 +88,19 @@ class ImageDatabaseImpl : ImageDataBase {
         originalFileName: String
     ): Result<ImageMetaData> {
         val metaData = ImageMetaData(imageId.toString(), username, originalFileName)
-        if (database.containsKey(username)) {
-            database[username]?.add(UserImage(image = file, metaData))
-        } else {
-            database[username] =
-                mutableListOf(UserImage(image = file, metaData))
 
-        }
-        return Result.success(metaData).also {
-            imageId++
-        }
+        val result = insertImage(UserImage(image = file, metaData))
+        return result.mapCatching {
+             ImageMetaData(it.toString(), username, originalFileName)
+         }
     }
 
     override fun download(id: Int, username: String): Result<Pair<ImageMetaData, ByteArray>> {
-        return database[username]?.firstOrNull { it.id == id }?.let {
-            Result.success(
-                it.imageMetaData to it.image
-            )
-        } ?: Result.failure(NoSuchElementException())
+        return getImage(id, username)
     }
 
     override fun retrieveAll(username: String): Result<List<ImageMetaData>> {
-        return Result.success(database[username]?.map {
-            it.imageMetaData
-        } ?: listOf())
+        return getAllImagesMetaData(username)
     }
 }
 
@@ -91,7 +136,7 @@ data class UserImage(val image: ByteArray, val username: String, val id: Int, va
 interface ImageDataBase {
     fun upload(
         file: ByteArray,
-        username: String = "Joe",
+        username: String,
         originalFileName: String
     ): Result<ImageMetaData>
 
