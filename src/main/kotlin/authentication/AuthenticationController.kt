@@ -17,19 +17,14 @@ interface Authentication {
     fun login(username: String, password: String): Boolean
 }
 
-class AuthenticationController(val database: MutableMap<String, String> = mutableMapOf()) :
-    Authentication {
-    override fun signUp(username: String, password: String) =
-        if (username.isBlank() || password.isBlank()) {
-            false
-        } else {
-            database[username] = sha256Hash(password)
-            insertUser(username,sha256Hash(password))
-            true
-        }
+interface AuthenticationDatabase {
+    fun insertUser(username: String, userPassword: String): Int
+    fun isValidUser(username: String, hashedPassword: String): Boolean
+}
 
-    fun insertUser(username: String, userPassword: String): Int {
-       return transaction {
+class AuthenticationDatabaseImpl() : AuthenticationDatabase {
+    override fun insertUser(username: String, userPassword: String): Int {
+        return transaction {
             addLogger(StdOutSqlLogger)
             SchemaUtils.create(UserTable)
 
@@ -40,7 +35,7 @@ class AuthenticationController(val database: MutableMap<String, String> = mutabl
         }
     }
 
-    fun isValidUser(username: String, hashedPassword: String): Boolean {
+    override fun isValidUser(username: String, hashedPassword: String): Boolean {
         return transaction {
             addLogger(StdOutSqlLogger)
 
@@ -50,9 +45,21 @@ class AuthenticationController(val database: MutableMap<String, String> = mutabl
 
         }
     }
+}
+
+class AuthenticationController(val database: AuthenticationDatabase = AuthenticationDatabaseImpl()) :
+    Authentication {
+    override fun signUp(username: String, password: String): Boolean {
+        if (username.isBlank() || password.isBlank()) {
+            return false
+        } else {
+            database.insertUser(username, sha256Hash(password))
+            return true
+        }
+    }
 
     override fun login(username: String, password: String) =
-        isValidUser(username, sha256Hash(password))
+        database.isValidUser(username, sha256Hash(password))
 }
 
 fun sha256Hash(password: String) =

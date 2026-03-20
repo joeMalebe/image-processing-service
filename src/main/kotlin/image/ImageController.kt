@@ -7,7 +7,7 @@ import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.statements.api.ExposedBlob
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -35,50 +35,7 @@ class ImageController(val database: ImageDataBase = ImageDatabaseImpl()) : IImag
     }
 }
 
-fun insertImage(userImage: UserImage): Result<Int> = transaction {
-    addLogger(StdOutSqlLogger)
-    SchemaUtils.create(ImageTable)
 
-    val id = UserTable.select(UserTable.id).where { UserTable.name eq userImage.username }
-        .singleOrNull()
-    return@transaction id?.let {
-        Result.success(ImageTable.insert {
-            it[name] = userImage.imageMetaData.name
-            it[url] = userImage.imageMetaData.url
-            it[userId] = id[UserTable.id]
-            it[imageBytes] = ExposedBlob(userImage.image)
-        }[ImageTable.id])
-    } ?: Result.failure(NoSuchElementException("User ${userImage.username} not found"))
-}
-
-fun getAllImagesMetaData(username: String): Result<List<ImageMetaData>> = transaction {
-     addLogger(StdOutSqlLogger)
-     val id =
-         UserTable.select(UserTable.id).where { UserTable.name eq username }.singleOrNull()
-             ?.get(UserTable.id)
-    return@transaction id?.let {
-         Result.success( ImageTable.selectAll().where { ImageTable.userId eq id }.map {
-             ImageMetaData(
-                 it[ImageTable.id].toString(),
-                 it[ImageTable.name],
-                 it[ImageTable.url]
-             )
-         })
-     } ?: Result.failure(NoSuchElementException("User $username not found "))
- }
-
-fun getImage(imageId: Int, username: String): Result<Pair<ImageMetaData, ByteArray>> = transaction {
-    addLogger(StdOutSqlLogger)
-    val userId = UserTable.select(UserTable.id).where { UserTable.name eq username }.singleOrNull()
-        ?.get(UserTable.id)
-    return@transaction userId?.let {
-
-        ImageTable.selectAll().where((ImageTable.userId eq userId) and (ImageTable.id eq imageId)).singleOrNull()?.let {
-
-            Result.success( ImageMetaData(it[ImageTable.id].toString(), it[ImageTable.name], it[ImageTable.url]) to it[ImageTable.imageBytes].bytes)
-        } ?: Result.failure(NoSuchElementException("No image found (id: $imageId) for user: $username"))
-    } ?: Result.failure(NoSuchElementException("user: $username not found"))
-}
 
 class ImageDatabaseImpl : ImageDataBase {
     val database = mutableMapOf<String, MutableList<UserImage>>()
@@ -101,6 +58,55 @@ class ImageDatabaseImpl : ImageDataBase {
 
     override fun retrieveAll(username: String): Result<List<ImageMetaData>> {
         return getAllImagesMetaData(username)
+    }
+
+    fun <T> loggedTransaction(block: JdbcTransaction.() -> T): T {
+        return transaction {
+            addLogger(StdOutSqlLogger)
+            return@transaction block()
+        }
+    }
+
+    private fun insertImage(userImage: UserImage): Result<Int> = loggedTransaction {
+        val id = UserTable.select(UserTable.id).where { UserTable.name eq userImage.username }
+            .singleOrNull()
+        return@loggedTransaction id?.let {
+            Result.success(ImageTable.insert {
+                it[name] = userImage.imageMetaData.name
+                it[url] = userImage.imageMetaData.url
+                it[userId] = id[UserTable.id]
+                it[imageBytes] = ExposedBlob(userImage.image)
+            }[ImageTable.id])
+        } ?: Result.failure(NoSuchElementException("User ${userImage.username} not found"))
+    }
+
+    private fun getAllImagesMetaData(username: String): Result<List<ImageMetaData>> = loggedTransaction {
+        addLogger(StdOutSqlLogger)
+        val id =
+            UserTable.select(UserTable.id).where { UserTable.name eq username }.singleOrNull()
+                ?.get(UserTable.id)
+        return@loggedTransaction id?.let {
+            Result.success( ImageTable.selectAll().where { ImageTable.userId eq id }.map {
+                ImageMetaData(
+                    it[ImageTable.id].toString(),
+                    it[ImageTable.name],
+                    it[ImageTable.url]
+                )
+            })
+        } ?: Result.failure(NoSuchElementException("User $username not found "))
+    }
+
+    private fun getImage(imageId: Int, username: String): Result<Pair<ImageMetaData, ByteArray>> = loggedTransaction {
+        addLogger(StdOutSqlLogger)
+        val userId = UserTable.select(UserTable.id).where { UserTable.name eq username }.singleOrNull()
+            ?.get(UserTable.id)
+        return@loggedTransaction userId?.let {
+
+            ImageTable.selectAll().where((ImageTable.userId eq userId) and (ImageTable.id eq imageId)).singleOrNull()?.let {
+
+                Result.success( ImageMetaData(it[ImageTable.id].toString(), it[ImageTable.name], it[ImageTable.url]) to it[ImageTable.imageBytes].bytes)
+            } ?: Result.failure(NoSuchElementException("No image found (id: $imageId) for user: $username"))
+        } ?: Result.failure(NoSuchElementException("user: $username not found"))
     }
 }
 
