@@ -9,10 +9,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 
-class ImageControllerTest {
+class ImageControllerImplTest {
     val imageDB:ImageDataBase = mock()
 
-    private val controller = ImageController(database = imageDB)
+    private val controller = ImageControllerImpl(database = imageDB)
 
     @Test
     fun `upload image invoke`() {

@@ -2,7 +2,7 @@ package com.example
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.example.authentication.AppController
+import com.example.AppController
 import com.example.authentication.LoginRequest
 import com.example.authentication.UNAUTHORISED
 import io.ktor.http.ContentType

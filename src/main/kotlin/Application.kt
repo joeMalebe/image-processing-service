@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.authentication.AppController
+import com.example.database.configureMysqlDb
 import io.ktor.server.application.*
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer

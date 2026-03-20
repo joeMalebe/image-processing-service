@@ -1,10 +1,10 @@
 package com.example
 
-import com.example.authentication.AppController
+import com.example.AppController
 import com.example.authentication.AuthenticationController
 import com.example.authentication.AuthenticationDatabase
 import com.example.authentication.UNAUTHORISED
-import com.example.image.ImageController
+import com.example.image.ImageControllerImpl
 import com.example.image.ImageDataBase
 import com.example.image.ImageMetaData
 import io.ktor.client.call.body
@@ -36,7 +36,7 @@ class ApplicationTest {
     private val mockImageDb = mock<ImageDataBase>()
     private val mockAuthDb = mock<AuthenticationDatabase>()
     private val controllerWithMockDb =
-        AppController(imageController = ImageController(database = mockImageDb))
+        AppController(imageControllerImpl = ImageControllerImpl(database = mockImageDb))
 
     @Test
     fun testRoot() = testApplication {

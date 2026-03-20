@@ -17,36 +17,6 @@ interface Authentication {
     fun login(username: String, password: String): Boolean
 }
 
-interface AuthenticationDatabase {
-    fun insertUser(username: String, userPassword: String): Int
-    fun isValidUser(username: String, hashedPassword: String): Boolean
-}
-
-class AuthenticationDatabaseImpl() : AuthenticationDatabase {
-    override fun insertUser(username: String, userPassword: String): Int {
-        return transaction {
-            addLogger(StdOutSqlLogger)
-            SchemaUtils.create(UserTable)
-
-            return@transaction UserTable.insert {
-                it[name] = username
-                it[password] = userPassword
-            } get UserTable.id
-        }
-    }
-
-    override fun isValidUser(username: String, hashedPassword: String): Boolean {
-        return transaction {
-            addLogger(StdOutSqlLogger)
-
-            return@transaction UserTable.select(UserTable.password)
-                .where { (UserTable.name eq username) and (UserTable.password eq hashedPassword) }
-                .any()
-
-        }
-    }
-}
-
 class AuthenticationController(val database: AuthenticationDatabase = AuthenticationDatabaseImpl()) :
     Authentication {
     override fun signUp(username: String, password: String): Boolean {
