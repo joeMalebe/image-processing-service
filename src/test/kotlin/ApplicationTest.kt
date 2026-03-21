@@ -119,7 +119,7 @@ class ApplicationTest {
 
     @Test
     fun `when images with valid token and no image then return 415`() = testApplicationWithController(AppController()) {
-        val response = client.post("/images") {
+        val response = client.post("/image") {
             appendAuthorizationHeader()
         }
 
@@ -139,7 +139,7 @@ class ApplicationTest {
                 )
             )
         )
-        val response = client.post("/images") {
+        val response = client.post("/image") {
             appendAuthorizationHeader()
             val boundary = "WebAppBoundary"
 
@@ -169,7 +169,7 @@ class ApplicationTest {
     fun `when images with invalid token then return 401`() = testApplicationWithController(
         AppController()) {
 
-        val response = client.post("/images") {
+        val response = client.post("/image") {
             headers.append("Authorisation", "Bearer invalid")
         }
 

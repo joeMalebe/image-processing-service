@@ -57,7 +57,7 @@ fun Application.configureRouting(controller: AppController) {
         }
 
         authenticate("auth-jwt") {
-            route("/image/{id}") {
+            route("/image") {
                 post {
                     val principal = call.principal<JWTPrincipal>()
                     val username = principal!!.payload.getClaim("username").asString()
@@ -89,7 +89,7 @@ fun Application.configureRouting(controller: AppController) {
                         }
                     }
                 }
-                get {
+                get("/{id}") {
                     val principal = call.principal<JWTPrincipal>()
                     val username = principal?.payload?.getClaim("username")?.asString()
                     val id = call.request.pathVariables["id"]
