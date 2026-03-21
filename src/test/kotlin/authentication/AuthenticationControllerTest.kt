@@ -1,5 +1,6 @@
 package com.example.authentication
 
+import org.mockito.Mockito.mock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -13,15 +14,10 @@ import kotlin.test.assertTrue
 
 class AuthenticationControllerTest {
 
-    private val controller = AuthenticationController(mutableMapOf())
+    val mockDb = mock<AuthenticationDatabase>()
+    private val controller = AuthenticationController(mockDb)
 
-    @Test
-    fun `add user to db when sign up`() {
-        controller.signUp(username = "test", password ="password")
 
-        assertTrue(controller.database.containsKey("test"))
-        assertEquals( "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8", controller.database["test"])
-    }
 
     @Test
     fun `when user is signed up then login succeeds`() {

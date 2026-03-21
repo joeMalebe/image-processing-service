@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.authentication.AppController
+import com.example.database.configureMysqlDb
 import io.ktor.server.application.*
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
@@ -10,6 +10,7 @@ fun main(args: Array<String>) {
         CIO,
         port = 8080,
         host = "0.0.0.0",
+
         module = {
             module(controller = AppController())
         }
@@ -19,5 +20,7 @@ fun main(args: Array<String>) {
 fun Application.module(controller: AppController) {
     configureSerialization()
     configureHTTP()
+    configureJwt()
+    configureMysqlDb()
     configureRouting(controller = controller)
 }
