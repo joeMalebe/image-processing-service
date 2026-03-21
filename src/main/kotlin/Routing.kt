@@ -57,59 +57,66 @@ fun Application.configureRouting(controller: AppController) {
         }
 
         authenticate("auth-jwt") {
-            post("/images") {
-                val principal = call.principal<JWTPrincipal>()
-                val username = principal!!.payload.getClaim("username").asString()
-                val param = call.receiveMultipart()
+            route("/image/{id}") {
+                post {
+                    val principal = call.principal<JWTPrincipal>()
+                    val username = principal!!.payload.getClaim("username").asString()
+                    val param = call.receiveMultipart()
 
-                param.forEachPart { part ->
-                    when (part) {
-                        is PartData.FileItem -> {
-                            val result = controller.uploadImage(
-                                part.provider().toByteArray(),
-                                 username,
-                                part.originalFileName ?: "$username-file",
-                            )
-                            //todo remove the returning of the image when uploading to backend
-                            call.response.headers.append(
-                                HttpHeaders.ContentType,
-                                ContentType.Application.Json.toString()
-                            )
-                            call.respond(HttpStatusCode.OK, result.getOrThrow())
-                        }
+                    param.forEachPart { part ->
+                        when (part) {
+                            is PartData.FileItem -> {
+                                val result = controller.uploadImage(
+                                    part.provider().toByteArray(),
+                                    username,
+                                    part.originalFileName ?: "$username-file",
+                                )
+                                //todo remove the returning of the image when uploading to backend
+                                call.response.headers.append(
+                                    HttpHeaders.ContentType,
+                                    ContentType.Application.Json.toString()
+                                )
+                                call.respond(HttpStatusCode.OK, result.getOrThrow())
+                            }
 
-                        is PartData.FormItem -> {
-                            //todo handle case
-                        }
+                            is PartData.FormItem -> {
+                                //todo handle case
+                            }
 
-                        else -> {
-                            //todo handle case
+                            else -> {
+                                //todo handle case
+                            }
                         }
                     }
                 }
-            }
-            get("/images/{id}") {
-                val principal = call.principal<JWTPrincipal>()
-                val username = principal?.payload?.getClaim("username")?.asString()
-                val id = call.request.pathVariables["id"]
+                get {
+                    val principal = call.principal<JWTPrincipal>()
+                    val username = principal?.payload?.getClaim("username")?.asString()
+                    val id = call.request.pathVariables["id"]
+                    var file: File? = null
+                    try {
+                        username?.let {
+                            id?.let {
+                                val result = controller.retrieveImage(username, id.toInt())
+                                result.onSuccess { image ->
+                                    call.response.headers.append(
+                                        HttpHeaders.ContentType,
+                                        ContentType.Image.JPEG.toString()
+                                    )
 
-                try {
-                    username?.let {
-                        id?.let {
-                            val result = controller.retrieveImage(username, id.toInt())
-                            result.onSuccess { image ->
-                                call.response.headers.append(
-                                    HttpHeaders.ContentType,
-                                    ContentType.Image.JPEG.toString()
-                                )
-                                call.respondFile(File(image.first.name).apply { writeBytes(image.second) })
-                            }.onFailure {
-                                call.respond(HttpStatusCode.NotFound)
-                            }
-                        } ?: call.respond(HttpStatusCode.BadRequest, "invalid id: $it")
-                    } ?: call.respond(HttpStatusCode.Unauthorized)
-                } catch (ex: NumberFormatException) {
-                    call.respond(HttpStatusCode.BadRequest, ex.message ?: "Check the request")
+                                    call.respondFile(File(image.first.name)
+                                        .apply { writeBytes(image.second) }
+                                        .also { file = it })
+                                }.onFailure {
+                                    call.respond(HttpStatusCode.NotFound)
+                                }
+                            } ?: call.respond(HttpStatusCode.BadRequest, "invalid id: $it")
+                        } ?: call.respond(HttpStatusCode.Unauthorized)
+                    } catch (ex: NumberFormatException) {
+                        call.respond(HttpStatusCode.BadRequest, ex.message ?: "Check the request")
+                    } finally {
+                        file?.delete()
+                    }
                 }
             }
             get("/images") {
@@ -136,8 +143,8 @@ fun Application.configureRouting(controller: AppController) {
     }
 }
 
-fun generateToken(username: String): String = JWT.create()
-    .withIssuer(issuer)
-    .withAudience(audience).withExpiresAt(Instant.now().plusSeconds(600))
-    .withClaim("username", username)
-    .sign(Algorithm.HMAC256(secret))
+    fun generateToken(username: String): String = JWT.create()
+        .withIssuer(issuer)
+        .withAudience(audience).withExpiresAt(Instant.now().plusSeconds(600))
+        .withClaim("username", username)
+        .sign(Algorithm.HMAC256(secret))

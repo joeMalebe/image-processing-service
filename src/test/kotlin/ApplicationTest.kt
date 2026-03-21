@@ -190,7 +190,7 @@ class ApplicationTest {
             )
         )
 
-        val response = client.get("/images/2") {
+        val response = client.get("/image/2") {
             appendAuthorizationHeader()
 
         }
@@ -213,7 +213,7 @@ class ApplicationTest {
             )
         )
 
-        val response = client.get("/images/fw") {
+        val response = client.get("/image/fw") {
             appendAuthorizationHeader()
 
         }
@@ -225,7 +225,7 @@ class ApplicationTest {
     fun `when retrieve image with non existing id then return not found`() = testApplicationWithController(controllerWithMockDb) {
         whenever { mockImageDb.download(2, "Joe") }.thenReturn(Result.failure(NoSuchElementException()))
 
-        val response = client.get("/images/2") {
+        val response = client.get("/image/2") {
             appendAuthorizationHeader()
 
         }
