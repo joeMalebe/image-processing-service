@@ -33,6 +33,7 @@ dependencies {
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.mysql)
     implementation(libs.exposed.dao)
+    implementation(libs.scrimage.core)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
