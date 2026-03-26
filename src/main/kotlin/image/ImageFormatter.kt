@@ -2,7 +2,6 @@ package com.example.image
 
 import com.sksamuel.scrimage.nio.ImageSource
 import com.sksamuel.scrimage.nio.ImmutableImageLoader
-import com.sksamuel.scrimage.nio.InputStreamImageSource
 import com.sksamuel.scrimage.nio.JpegWriter
 
 class ImageFormatter {
