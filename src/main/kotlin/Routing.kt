@@ -5,6 +5,8 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.example.AppController
 import com.example.authentication.LoginRequest
 import com.example.authentication.UNAUTHORISED
+import com.example.image.ImageFormatter
+import com.example.image.ImageFormattingRequest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -118,25 +120,51 @@ fun Application.configureRouting(controller: AppController) {
                         file?.delete()
                     }
                 }
+                post("/{id}/transform") {
+                    val principal = call.principal<JWTPrincipal>()
+                    val username = principal?.payload?.getClaim("username")?.asString()
+                    try {
+                        val id = call.pathParameters["id"]
+                        val request = call.receive<ImageFormattingRequest>()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "This id: $id is invalid")
+                            return@post
+                        }
+                        if (username == null) {
+                            call.respond(HttpStatusCode.Unauthorized, "User is unauthorised")
+                            return@post
+                        }
+                        controller.retrieveImage(username, id.toInt()).onSuccess {
+                            val outputImage = ImageFormatter().formatImage(it.second,request)
+                            call.respondBytes(bytes = outputImage)
+                        }.onFailure {
+                            call.respond(HttpStatusCode.NotFound, "Image with id $id not found")
+                        }
+                    } catch (ex: NumberFormatException) {
+                        call.respond(HttpStatusCode.BadRequest, "invalid id ${ex.message}.")
+                    }
+                }
             }
-            get("/images") {
-                val principal = call.principal<JWTPrincipal>()
-                val username = principal?.payload?.getClaim("username")?.asString()
+            route("/images") {
+                get {
+                    val principal = call.principal<JWTPrincipal>()
+                    val username = principal?.payload?.getClaim("username")?.asString()
 
-                try {
-                    //todo add pagination and limit logic
-                    val page = call.request.queryParameters["page"]?.toInt() ?: 1
-                    val limit = call.request.queryParameters["limit"]?.toInt() ?: 5
+                    try {
+                        //todo add pagination and limit logic
+                        val page = call.request.queryParameters["page"]?.toInt() ?: 1
+                        val limit = call.request.queryParameters["limit"]?.toInt() ?: 5
 
-                    val result = controller.retrieveAll(username ?: "")
-                    call.response.headers.append(
-                        HttpHeaders.ContentType,
-                        ContentType.Application.Json.toString()
-                    )
+                        val result = controller.retrieveAll(username ?: "")
+                        call.response.headers.append(
+                            HttpHeaders.ContentType,
+                            ContentType.Application.Json.toString()
+                        )
 
-                    call.respond(HttpStatusCode.OK, result.getOrThrow())
-                } catch (ex: NumberFormatException) {
-                    call.respond(HttpStatusCode.BadRequest, ex.message ?: "Check the request")
+                        call.respond(HttpStatusCode.OK, result.getOrThrow())
+                    } catch (ex: NumberFormatException) {
+                        call.respond(HttpStatusCode.BadRequest, ex.message ?: "Check the request")
+                    }
                 }
             }
         }

@@ -32,7 +32,7 @@ class ImageFormatterTest {
     }
 
     @Test
-    fun `when formatImage with resize formatter then return resized copy of origina`() {
+    fun `when formatImage with resize formatter then return resized copy of original`() {
         val input = File("src/test/resources/test.jpeg").readBytes()
         val width = 500
         val height = 800
@@ -47,5 +47,4 @@ class ImageFormatterTest {
         assertEquals(width.toString(), heightAndWidthTags[1]?.rawValue)
         assertEquals(height.toString(), heightAndWidthTags[0]?.rawValue)
     }
-
 }
