@@ -6,8 +6,14 @@ import kotlinx.serialization.Serializable
 data class ImageFormattingRequest(val resize: Resize? = null,
                            val crop: Crop? = null,
                            val rotate: Rotate? = null,
+                           val flip: Flip? = null,
                            val format: Format? = null
 )
+
+@Serializable
+data class Flip(val x: Boolean,val y: Boolean) {
+
+}
 
 @Serializable
 data class Resize(val width: Int, val height: Int)
