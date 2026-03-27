@@ -23,6 +23,8 @@ import io.ktor.server.routing.*
 import io.ktor.utils.io.toByteArray
 import java.io.File
 import java.time.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 const val secret = "secret"
 const val issuer = "http://0.0.0.0:8080/"
@@ -175,6 +177,7 @@ fun Application.configureRouting(controller: AppController) {
 
     fun generateToken(username: String): String = JWT.create()
         .withIssuer(issuer)
-        .withAudience(audience).withExpiresAt(Instant.now().plusSeconds(600))
+        .withAudience(audience)
+        .withExpiresAt(Instant.now().plusSeconds(90.minutes.inWholeSeconds))
         .withClaim("username", username)
         .sign(Algorithm.HMAC256(secret))
