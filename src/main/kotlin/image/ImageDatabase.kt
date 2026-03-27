@@ -8,6 +8,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.statements.api.ExposedBlob
 import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -87,6 +88,7 @@ class ImageDatabaseImpl : ImageDataBase {
     }
 
     private fun insertImage(username: String, fileName: String, fileUrl: String, image: ByteArray): Result<Int> = loggedTransaction {
+        SchemaUtils.create(ImageTable)
         val id = UserTable.select(UserTable.id).where { UserTable.name eq username }
             .singleOrNull()
         return@loggedTransaction id?.let {

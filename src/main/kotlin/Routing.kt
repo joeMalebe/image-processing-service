@@ -136,7 +136,9 @@ fun Application.configureRouting(controller: AppController) {
                         }
                         controller.retrieveImage(username, id.toInt()).onSuccess {
                             val outputImage = ImageFormatter().formatImage(it.second,request)
-                            call.respondBytes(bytes = outputImage)
+                            val file = File("filtered-${it.first.name}").also { it.writeBytes(outputImage) }
+                            call.respondFile(file)
+                            file.delete()
                         }.onFailure {
                             call.respond(HttpStatusCode.NotFound, "Image with id $id not found")
                         }
