@@ -1,0 +1,51 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "app".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+  # Database Service
+  db:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: db-password
+      MYSQL_DATABASE: db-name
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # Server Application Service
+  app:
+    build: .  # Points to the Dockerfile in your current directory
+    ports:
+      - "8888:8080"
+    secrets:
+      - db-name
+      - db-user
+      - db-password
+      - secrets
+    environment:
+      # Use the service name 'db' as the hostname
+      DB_HOST: db
+      DB_USER: db-user
+      DB_PASSWORD: db-password
+      DB_NAME: db-name
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+
+secrets:
+ db-password:
+   file: ./run/secrets/dbPassword.txt
+ db-name:
+   file: ./run/secrets/dbName.txt
+ db-user:
+   file: ./run/secrets/dbUser.txt
+ secrets:
+   file: ./run/secrets/secret.txt

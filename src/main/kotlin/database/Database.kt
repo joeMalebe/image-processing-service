@@ -1,13 +1,17 @@
 package com.example.database
 
+import com.example.dbName
+import com.example.dbPassword
+import com.example.dbUser
 import io.ktor.server.application.Application
-import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.Database.Companion.connect
+
 
 fun Application.configureMysqlDb() {
-    val mysqldb = Database.connect(
-        "jdbc:mysql://localhost:3306/imageDb",
+    connect(
+        "jdbc:mysql://db:3306/$dbName",
         driver = "com.mysql.cj.jdbc.Driver",
-        user = "root",
-        password = "@beast2468ds"
+        user = dbUser,
+        password = dbPassword
     )
 }

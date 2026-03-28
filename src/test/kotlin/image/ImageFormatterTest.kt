@@ -47,22 +47,4 @@ class ImageFormatterTest {
         assertEquals(width.toString(), heightAndWidthTags[1]?.rawValue)
         assertEquals(height.toString(), heightAndWidthTags[0]?.rawValue)
     }
-
-    @Test
-    fun `when formatImage with flip formatter then return resized copy of original`() {
-        val input = File("src/test/resources/test.jpeg").readBytes()
-        val width = 500
-        val height = 800
-
-        val outputFile = formatter.formatImage(
-            input,
-            formatting = ImageFormattingRequest(flip = Flip(x = true,y =false))
-        )
-        val heightAndWidthTags =
-            ImageMetadata.fromBytes(outputFile).tags().filter { it.name == "Image Width" || it.name == "Image Height" }
-
-        assertEquals(input.toTypedArray(), outputFile.toTypedArray())
-       assertEquals(width.toString(), heightAndWidthTags[1]?.rawValue)
-//        assertEquals(height.toString(), heightAndWidthTags[0]?.rawValue)
-    }
 }

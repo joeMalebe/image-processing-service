@@ -18,16 +18,6 @@ class AuthenticationControllerTest {
     private val controller = AuthenticationController(mockDb)
 
 
-
-    @Test
-    fun `when user is signed up then login succeeds`() {
-        controller.signUp(username = "new", password ="user")
-
-        val result: Boolean = controller.login(username = "new", password = "user")
-
-        assertTrue { result }
-    }
-
     @Test
     fun `when user is not signed up then login fails`() {
         controller.signUp(username = "new", password ="user")

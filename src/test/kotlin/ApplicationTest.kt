@@ -24,6 +24,7 @@ import io.ktor.http.contentType
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
+import org.junit.Before
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
@@ -38,6 +39,14 @@ class ApplicationTest {
     private val mockAuthDb = mock<AuthenticationDatabase>()
     private val controllerWithMockDb =
         AppController(imageControllerImpl = ImageControllerImpl(database = mockImageDb), authenticationController = AuthenticationController(mockAuthDb))
+
+    @Before
+    fun setUp() {
+        System.setProperty("secret", "secret")
+        System.setProperty("dbPassword", "database")
+        System.setProperty("dbName", "testDb")
+        System.setProperty("dbUser", "test")
+    }
 
     @Test
     fun testRoot() = testApplication {
