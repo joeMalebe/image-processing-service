@@ -19,6 +19,13 @@ ktor {
     development = true
 }
 
+tasks.named<JavaExec>("run") {
+    systemProperty("secret", System.getProperty("secret"))
+    systemProperty("dbPassword", System.getProperty("dbPassword"))
+    systemProperty("dbName", System.getProperty("dbName"))
+    systemProperty("dbUser", System.getProperty("dbUser"))
+}
+
 dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.core)
@@ -33,6 +40,7 @@ dependencies {
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.mysql)
     implementation(libs.exposed.dao)
+    implementation(libs.scrimage.core)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
