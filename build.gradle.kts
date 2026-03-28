@@ -19,6 +19,13 @@ ktor {
     development = true
 }
 
+tasks.named<JavaExec>("run") {
+    systemProperty("secret", System.getProperty("secret"))
+    systemProperty("dbPassword", System.getProperty("dbPassword"))
+    systemProperty("dbName", System.getProperty("dbName"))
+    systemProperty("dbUser", System.getProperty("dbUser"))
+}
+
 dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.core)

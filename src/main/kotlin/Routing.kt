@@ -2,7 +2,6 @@ package com.example
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.example.AppController
 import com.example.authentication.LoginRequest
 import com.example.authentication.UNAUTHORISED
 import com.example.image.ImageFormatter
@@ -12,21 +11,25 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
-import io.ktor.server.application.*
+import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondFile
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
 import io.ktor.utils.io.toByteArray
 import java.io.File
 import java.time.Instant
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
-const val secret = "secret"
+val secret = System.getProperty("secret")!!
 const val issuer = "http://0.0.0.0:8080/"
 const val audience = "http://0.0.0.0:8080/hello"
 fun Application.configureRouting(controller: AppController) {
