@@ -1,14 +1,14 @@
 package com.example.database
 
+import com.example.dbName
+import com.example.dbPassword
+import com.example.dbUser
 import io.ktor.server.application.Application
-import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.Database.Companion.connect
 
-val dbPassword = System.getProperty("dbPassword")!!
-val dbUser = System.getProperty("dbUser")!!
-val dbName = System.getProperty("dbName")!!
 
 fun Application.configureMysqlDb() {
-    Database.connect(
+    connect(
         "jdbc:mysql://db:3306/$dbName",
         driver = "com.mysql.cj.jdbc.Driver",
         user = dbUser,

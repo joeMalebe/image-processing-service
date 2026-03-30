@@ -29,7 +29,8 @@ import java.io.File
 import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
 
-val secret = System.getProperty("secret")!!
+
+
 const val issuer = "http://0.0.0.0:8080/"
 const val audience = "http://0.0.0.0:8080/hello"
 fun Application.configureRouting(controller: AppController) {
